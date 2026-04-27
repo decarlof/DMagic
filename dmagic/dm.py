@@ -198,13 +198,13 @@ def add_users(exp_obj, username_list):
             log.error('   Could not find user {:s}: {:s}'.format(uname, str(e)))
             continue
         if uname in existing_unames:
-            log.warning('   User {:s} is already on the experiment'.format(
-                        make_pretty_user_name(user_obj)))
+            log.warning('   User {:s} ({:s}) is already on the experiment'.format(
+                        make_pretty_user_name(user_obj), uname))
             continue
         try:
             user_api.addUserExperimentRole(uname, 'User', exp_obj['name'])
-            log.info('   Added user {:s} to the DM experiment'.format(
-                        make_pretty_user_name(user_obj)))
+            log.info('   Added user {:s} ({:s}) to the DM experiment'.format(
+                        make_pretty_user_name(user_obj), uname))
         except Exception as e:
             log.error('   Could not add user {:s}: {:s}'.format(uname, str(e)))
 
@@ -219,8 +219,8 @@ def remove_users(exp_name, username_list):
             continue
         try:
             user_api.deleteUserExperimentRole(uname, 'User', exp_name)
-            log.info('   Removed user {:s} from the DM experiment'.format(
-                        make_pretty_user_name(user_obj)))
+            log.info('   Removed user {:s} ({:s}) from the DM experiment'.format(
+                        make_pretty_user_name(user_obj), uname))
         except Exception as e:
             log.error('   Could not remove user {:s}: {:s}'.format(uname, str(e)))
 
