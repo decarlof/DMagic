@@ -124,10 +124,8 @@ def show(args):
     output = scheduling.beamtime_requests(run, auth, args)
     try:
         proposals = output[0]['activities']
-        # pprint.pprint(proposals, compact=True)
-    except IndexError:
-    # if not proposals:
-        log.error('No valid current experimentxxx')
+    except (IndexError, TypeError):
+        log.error('No proposals found for run %s — the run may not exist yet or no beamtime is scheduled' % run)
         return None
     try:
         log.error(proposals['message'])
