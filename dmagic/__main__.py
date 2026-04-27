@@ -931,6 +931,8 @@ def main():
             write_sections = ('local', 'settings', 'site')
         else:
             write_sections = ('settings', 'site')
+        if hasattr(args, 'badges'):
+            args.badges = ''
         config.write(args.config, args=args, sections=write_sections)
     except RuntimeError as e:
         log.error(str(e))
