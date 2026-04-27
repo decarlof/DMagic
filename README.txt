@@ -36,8 +36,20 @@ Key Commands
                          selection, then creates the experiment and adds all proposal users.
 
 - dmagic create-manual : Creates a DM experiment manually for commissioning runs or
-                         staff experiments that have no scheduling proposal. Badge numbers,
-                         PI name, and title are provided on the command line.
+                         staff experiments that have no scheduling proposal. PI name,
+                         title, and optional badge numbers are provided on the command
+                         line. Optional arguments:
+                           --gup   GUP number (default: 0 = no proposal/commissioning)
+                           --date  year-month in yyyy-mm format (default: current month)
+                           --start experiment start date in yyyy-mm-dd format
+                                   (default: first day of --date month)
+                           --end   experiment end date in yyyy-mm-dd format
+                                   (default: 14 days after --start)
+                         Experiment name format: yyyy-mm-{LastName}-{gup}
+                         Example: dmagic create-manual --name DeCarlo
+                                    --first-name Francesco --gup 1
+                                    --start 2026-05-01 --end 2026-05-07
+                                    --title "2-BM commissioning"
 
 - dmagic delete        : Deletes a DM experiment from Sojourner. Lists all experiments
                          for the station (last 2 years, including manually created ones)

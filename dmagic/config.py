@@ -105,10 +105,18 @@ SECTIONS['manual'] = {
         'type': str,
         'default': '',
         'help': 'PI email address'},
+    'end': {
+        'type': str,
+        'default': '',
+        'help': 'Experiment end date in yyyy-mm-dd format (default: 14 days after --start or --date)'},
     'first-name': {
         'type': str,
         'default': '',
         'help': 'PI first name'},
+    'gup': {
+        'type': int,
+        'default': 0,
+        'help': 'GUP number (default: 0 = commissioning/no proposal)'},
     'institution': {
         'type': str,
         'default': '',
@@ -117,6 +125,10 @@ SECTIONS['manual'] = {
         'type': str,
         'default': 'Staff',
         'help': 'PI last name'},
+    'start': {
+        'type': str,
+        'default': '',
+        'help': 'Experiment start date in yyyy-mm-dd format (default: first day of --date month)'},
     'title': {
         'type': str,
         'default': 'Commissioning',

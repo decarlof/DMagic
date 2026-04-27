@@ -223,17 +223,29 @@ dmagic create-manual
 --------------------
 
 Creates a DM experiment manually for commissioning runs or staff experiments that have
-no scheduling proposal. Badge numbers, PI name, and title are provided on the command
-line::
+no scheduling proposal. PI name, title, and optional badge numbers are provided on the
+command line. The experiment name is formatted as ``yyyy-mm-{LastName}-{gup}``.
 
-    (dm) $ dmagic create-manual --name DeCarlo --title "Vibration Tests" --badges 49734,218262
+Basic commissioning example (GUP 0, current month, 14-day window)::
+
+    (dm) $ dmagic create-manual --name DeCarlo --first-name Francesco --title "2-BM commissioning"
+
+With explicit GUP number and date range::
+
+    (dm) $ dmagic create-manual --name DeCarlo --first-name Francesco \
+              --title "2-BM run" --gup 1 --start 2026-05-01 --end 2026-05-07
+
+If an invalid date format is entered, the command exits with an error::
+
+    ERROR - Invalid --start '05/01/2026': expected format is yyyy-mm-dd (e.g. 2026-05-01)
 
 ::
 
     (dm) $ dmagic create-manual -h
     usage: dmagic create-manual [-h] [--badges BADGES] [--date DATE] [--email EMAIL]
-                                [--first-name FIRST_NAME] [--institution INSTITUTION]
-                                [--name NAME] [--title TITLE] [--config FILE]
+                                [--end END] [--first-name FIRST_NAME] [--gup GUP]
+                                [--institution INSTITUTION] [--name NAME]
+                                [--start START] [--title TITLE] [--config FILE]
 
     Create a DM experiment manually for commissioning runs
 
@@ -242,11 +254,16 @@ line::
       --badges BADGES       Comma-separated badge numbers to add to the experiment (default: )
       --date DATE           Year-month in yyyy-mm format (default: current month) (default: )
       --email EMAIL         PI email address (default: )
+      --end END             Experiment end date in yyyy-mm-dd format
+                            (default: 14 days after --start or --date) (default: )
       --first-name FIRST_NAME
                             PI first name (default: )
+      --gup GUP             GUP number (default: 0 = commissioning/no proposal) (default: 0)
       --institution INSTITUTION
                             PI institution (default: )
       --name NAME           PI last name (default: Staff)
+      --start START         Experiment start date in yyyy-mm-dd format
+                            (default: first day of --date month) (default: )
       --title TITLE         Experiment title (default: Commissioning)
       --config FILE         File name of configuration (default: /home/beams/2BMB/dmagic.conf)
 

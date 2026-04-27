@@ -298,17 +298,36 @@ def create_manual(args):
             return
     else:
         ref_date = now
-    args.year_month     = ref_date.strftime('%Y-%m')
+
+    if args.start:
+        try:
+            start_date = datetime.datetime.strptime(args.start, '%Y-%m-%d')
+        except ValueError:
+            log.error("Invalid --start '%s': expected format is yyyy-mm-dd (e.g. 2026-05-01)" % args.start)
+            return
+    else:
+        start_date = ref_date.replace(day=1)
+
+    if args.end:
+        try:
+            end_date = datetime.datetime.strptime(args.end, '%Y-%m-%d')
+        except ValueError:
+            log.error("Invalid --end '%s': expected format is yyyy-mm-dd (e.g. 2026-05-14)" % args.end)
+            return
+    else:
+        end_date = start_date + dt.timedelta(days=14)
+
+    args.year_month     = start_date.strftime('%Y-%m')
     args.pi_last_name   = args.name
     args.pi_first_name  = args.first_name
     args.pi_institution = args.institution
     args.pi_email       = args.email
     args.pi_badge       = ''
-    args.gup_number     = '0'
+    args.gup_number     = str(args.gup)
     args.gup_title      = args.title
     args.manual         = True
-    args.manual_start   = ref_date.strftime('%d-%b-%y')
-    args.manual_end     = (ref_date + dt.timedelta(days=14)).strftime('%d-%b-%y')
+    args.manual_start   = start_date.strftime('%d-%b-%y')
+    args.manual_end     = end_date.strftime('%d-%b-%y')
     log.info("Manual experiment: %s-%s, title: %s" % (
               args.year_month, args.pi_last_name, args.gup_title))
 
