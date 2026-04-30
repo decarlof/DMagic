@@ -51,8 +51,8 @@ Our storage capabilities are limited. It will be deleted permanently after that 
 </ul>
 
 <p>
-Viktor Nikitin<br>
-<a href="mailto:vnikitin@anl.gov">vnikitin@anl.gov</a><br>
+The 32-ID TXM Team<br>
+Alberto Mittone (<a href="mailto:amittone@anl.gov">amittone@anl.gov</a>) and Viktor Nikitin (<a href="mailto:vnikitin@anl.gov">vnikitin@anl.gov</a>)<br>
 Advanced Photon Source
 </p>
 
