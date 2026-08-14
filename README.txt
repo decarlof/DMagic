@@ -113,6 +113,17 @@ Key Commands
                          Output: one line per beamtime with start/end dates, run name,
                          GUP number, PI, and truncated proposal title.
 
+- dmagic collected     : For each beamtime scheduled in [--start-date, --end-date],
+                         reports whether a matching DM experiment on Sojourner exists
+                         (and its name), or shows "(no DM experiment)" if nothing was
+                         created. Joins scheduling beamtimes to DM experiments by GUP,
+                         preferring same-month matches when a GUP has more than one
+                         DM experiment. Reports only what DM can authoritatively
+                         answer — it does not count files under /gdata. Options are
+                         the same as list-beamtimes:
+                           --start-date  (default: January 1 of the current year)
+                           --end-date    (default: today)
+
 Per-beamline configuration (2-BM, 7-BM, 32-ID, ...)
 ---------------------------------------------------
 

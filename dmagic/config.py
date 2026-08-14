@@ -178,6 +178,7 @@ EMAIL_PARAMS      = ()
 DAQ_PARAMS        = ('local',)
 LIST_ESAFS_PARAMS     = ('query',)
 LIST_BEAMTIMES_PARAMS = ('query',)
+COLLECTED_PARAMS      = ('query',)
 SITE_SUPPRESS     = ('site',)
 NICE_NAMES        = ('General', 'Settings', 'Site', 'Manual', 'Local', 'Query')
 # Note: 'General' section only contains --config which is not logged
