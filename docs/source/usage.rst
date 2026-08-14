@@ -775,6 +775,38 @@ value in ``~/dmagic.conf``. If no dates are provided, the range defaults to
       --end-date END_DATE      Range end date (YYYY-MM-DD); defaults to today (default: )
       --config FILE            File name of configuration (default: /home/beams/2BMB/dmagic.conf)
 
+dmagic list-beamtimes
+---------------------
+
+Lists every beamtime scheduled on this beamline whose window overlaps
+``[--start-date, --end-date]``, aggregated across all APS runs that touch
+the range. Uses the APS scheduling REST API (not DM), so a beamtime shows
+up whether or not a DM experiment was ever created for it. The beamline is
+taken from the ``[site]`` section of ``~/dmagic.conf``. If no dates are
+provided the range defaults to **January 1 of the current year → today**::
+
+    (dm) $ dmagic list-beamtimes --start-date 2026-01-01 --end-date 2026-08-05 | head
+    2026-08-05 15:00:00,000 - Listing beamtimes for 32-ID-B,C from 2026-01-01 to 2026-08-05
+    2026-08-05 15:00:01,500 -    Found 34 beamtime(s)
+    2026-08-05 15:00:01,500 -    2026-07-31 to 2026-08-05  run=2026-2  GUP=1022117  PI=Rajmund Mokso  title=A new holotomographic scheme with multilayer laue lenses
+    2026-08-05 15:00:01,500 -    2026-07-29 to 2026-07-31  run=2026-2  GUP=1015240  PI=Rebecca Scharnagl  title=eBERlight: Tracking seasonal changes in the interti
+    ...
+
+Sorted newest first, matching every other dmagic list command.
+
+::
+
+    (dm) $ dmagic list-beamtimes -h
+    usage: dmagic list-beamtimes [-h] [--start-date START_DATE] [--end-date END_DATE] [--config FILE]
+
+    List all beamtimes scheduled on this beamline in a date range
+
+    options:
+      -h, --help               show this help message and exit
+      --start-date START_DATE  Range start date (YYYY-MM-DD); defaults to first day of current month (default: )
+      --end-date END_DATE      Range end date (YYYY-MM-DD); defaults to today (default: )
+      --config FILE            File name of configuration (default: /home/beams/2BMB/dmagic.conf)
+
 Command Reference
 =================
 
@@ -806,3 +838,5 @@ Command Reference
         remove-user  Remove users from an existing DM experiment by badge number
         list-users   List all users with access to a DM experiment
         list-esafs   List ESAFs for the beamline station in a date range
+        list-beamtimes
+                     List all beamtimes scheduled on this beamline in a date range
