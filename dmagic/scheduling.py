@@ -299,6 +299,13 @@ def list_beamtimes_in_range(start_date, end_date, auth, args):
     return filtered
 
 
+# Per-process cache for get_beamtime results. Keyed by
+# (gup_number, run, beamline) so callers in the same dmagic invocation
+# (e.g. make_dm_username_list then create_experiment) do not re-query
+# the scheduling API — one dmagic command, one round trip per GUP.
+_beamtime_cache = {}
+
+
 def get_beamtime(gup_number, auth, args):
     """
     Get the raw beamtime record for a specific GUP number in the current run.
@@ -323,6 +330,10 @@ def get_beamtime(gup_number, auth, args):
     if not str(gup_number).strip():
         log.error("GUP number is empty")
         return None
+
+    cache_key = (str(gup_number), run, args.beamline)
+    if cache_key in _beamtime_cache:
+        return _beamtime_cache[cache_key]
 
     # Use the same `schedule/findByRunNameAndScheduleName` endpoint as
     # list_beamtimes() / beamtime_requests(). The old activity endpoint
@@ -350,9 +361,11 @@ def get_beamtime(gup_number, auth, args):
             continue
         if int(gup_id) == int(gup_number):
             log.info("Beamtime for GUP %s found in run %s" % (gup_number, run))
+            _beamtime_cache[cache_key] = item
             return item
 
     log.error("No beamtime from proposal %s found in run %s" % (gup_number, run))
+    _beamtime_cache[cache_key] = None
     return None
 
 
