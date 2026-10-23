@@ -106,15 +106,52 @@ def make_dm_username_list(args):
     target_prop = scheduling.get_beamtime(str(args.gup_number), auth, args)
     if target_prop is None:
         return None, set()
+
+    # Dual-beamline warning: when a beamtime is scheduled on two beamlines
+    # (beamlineSecond populated), the scheduling system attaches the
+    # activity to the primary (beamlineFirst) only. We may be running
+    # dmagic for the SECONDARY beamline — flag that so the operator
+    # knows this is a shared slot and the "primary" station listed
+    # below belongs to another sector.
+    import re as _re
+    beamtime  = target_prop.get('beamtime', {}) or {}
+    bl1       = beamtime.get('beamlineFirst') or {}
+    bl2       = beamtime.get('beamlineSecond') or {}
+    bl1_sec   = (bl1.get('sector') or {}).get('sectorNum')
+    bl2_sec   = (bl2.get('sector') or {}).get('sectorNum') if bl2 else None
+    m         = _re.match(r'^(\d+)-', str(getattr(args, 'beamline', '')))
+    my_sector = int(m.group(1)) if m else None
+    if bl2_sec is not None and my_sector is not None:
+        if bl1_sec != my_sector and bl2_sec == my_sector:
+            log.warning(
+                '   Dual-beamline beamtime: this beamline (sector %s) '
+                'is listed as SECONDARY. Primary is sector %s '
+                '(beamlineNum %s).'
+                % (my_sector, bl1_sec, bl1.get('beamlineNum')))
+        elif bl1_sec == my_sector and bl2_sec != my_sector:
+            log.info(
+                '   Dual-beamline beamtime: this beamline (sector %s) '
+                'is primary. Secondary is sector %s (beamlineNum %s).'
+                % (my_sector, bl2_sec, bl2.get('beamlineNum')))
+
     users = target_prop['beamtime']['proposal']['experimenters']
     log.info('   Adding the primary beamline contact')
     gup_set = {'d' + str(args.primary_beamline_contact_badge)}
     log.info('   Adding the secondary beamline contact')
     gup_set.add('d' + str(args.secondary_beamline_contact_badge))
+
+    # Dedup experimenters by badge before logging; the schedule endpoint
+    # returns dual-beamline experimenters twice (once per beamline role),
+    # which would otherwise produce misleading "Adding GUP user X" lines.
+    seen_badges = set()
     for u in users:
+        badge = str(u.get('badge', ''))
+        if not badge or badge in seen_badges:
+            continue
+        seen_badges.add(badge)
         log.info('   Adding GUP user {0}, {1}, badge {2}'.format(
-                    u['lastName'], u['firstName'], u['badge']))
-        gup_set.add('d' + str(u['badge']))
+                    u.get('lastName', '?'), u.get('firstName', '?'), badge))
+        gup_set.add('d' + badge)
     esaf_number = getattr(args, 'esaf_number', '') or ''
     esaf_set = get_esaf_users(esaf_number) - gup_set
     return gup_set, esaf_set

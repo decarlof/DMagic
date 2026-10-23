@@ -320,19 +320,31 @@ def get_beamtime(gup_number, auth, args):
         log.error("Could not determine current run")
         return None
 
-    end_point = "beamline-scheduling/sched-api/activity/findByRunNameAndBeamlineId"
-    api_url = args.url + '/' + end_point + '/' + run + '/' + args.beamline
-
     if not str(gup_number).strip():
         log.error("GUP number is empty")
         return None
+
+    # Use the same `schedule/findByRunNameAndScheduleName` endpoint as
+    # list_beamtimes() / beamtime_requests(). The old activity endpoint
+    # was missing beamtimes that had been scheduled but not yet activated,
+    # which left dmagic create unable to resolve experimenters for them
+    # (symptom: "No beamtime from proposal X found in run Y" after the
+    # user already picked that beamtime from the dmagic create menu).
+    end_point = "beamline-scheduling/sched-api/schedule/findByRunNameAndScheduleName"
+    api_url = args.url + '/' + end_point + '/' + run + '/' + args.beamline
 
     reply = requests.get(api_url, auth=auth)
     if reply.status_code != 200:
         log.error("No response from the restAPI. Error: %s" % reply.status_code)
         return None
 
-    for item in reply.json():
+    try:
+        activities = reply.json()[0]['activities']
+    except (IndexError, KeyError, TypeError):
+        log.error("No activities in schedule response for run %s" % run)
+        return None
+
+    for item in activities:
         gup_id = item['beamtime']['proposal'].get('gupId', '')
         if not gup_id:
             continue
