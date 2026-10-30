@@ -64,21 +64,40 @@ def get_esaf_doi(esaf_id):
 def list_esafs(start_date, end_date, station=None):
     """Return ESAFs for the station in [start_date, end_date].
 
-    Wraps EsafApsDbApi.listStationEsafsByDateRange(). Dates are YYYY-MM-DD
-    strings. station defaults to DM_STATION_NAME env var (or '2BM').
-    Returns [] if DM is unavailable or the call fails.
+    Prefers EsafApsDbApi.listStationEsafsByDateRange() (newer DM SDK).
+    Falls back to listStationEsafs() + client-side date filtering on
+    older SDK vintages that lack the by-date-range method (e.g. the
+    SDK deployed on 32-ID). Dates are YYYY-MM-DD strings. station
+    defaults to DM_STATION_NAME env var (or '2BM'). Returns [] if DM
+    is unavailable or the call fails.
     """
     if not _DM_AVAILABLE:
         return []
     if station is None:
         station = os.environ.get('DM_STATION_NAME', '2BM')
+
+    if hasattr(esaf_api, 'listStationEsafsByDateRange'):
+        try:
+            result = esaf_api.listStationEsafsByDateRange(
+                station, startDate=start_date, endDate=end_date)
+            return list(result) if result else []
+        except Exception as e:
+            log.error('Could not list ESAFs for station %s: %s'
+                      % (station, str(e)))
+            return []
+
     try:
-        result = esaf_api.listStationEsafsByDateRange(
-            station, startDate=start_date, endDate=end_date)
-        return list(result) if result else []
+        result = esaf_api.listStationEsafs(station)
     except Exception as e:
-        log.error('Could not list ESAFs for station %s: %s' % (station, str(e)))
+        log.error('Could not list ESAFs for station %s: %s'
+                  % (station, str(e)))
         return []
+    filtered = []
+    for e in result or []:
+        start = str(e.get('experimentStartDate') or e.get('startDate') or '')[:10]
+        if start and start_date <= start <= end_date:
+            filtered.append(e)
+    return filtered
 
 
 def make_experiment_name(args):
@@ -583,17 +602,23 @@ def _inspect_source(host, path):
     return _inspect_remote_source(host, path)
 
 
-def _report_source(local_path, host, status, count, size_bytes, role):
+def _report_source(local_path, host, status, count, size_bytes, role,
+                   data_top_dir=None):
     """Log what _inspect_source found. role is 'raw' or 'rec'.
 
     `host` is the data-host value used for the inspection — included in
     MISSING / NO_TOPDIR messages so users see immediately which host
-    was probed.
+    was probed. `data_top_dir` is shown alongside so the user has both
+    current values to use as a template when picking the correct ones.
 
     Missing raw is an error (dmagic is misconfigured); missing rec is a
     warning (recon may not have run yet). Returns True if the caller
     should proceed with the DM dispatch, False if it should skip.
     """
+    # Show the current effective values so the user can see what they are and
+    # use them as a template for the correct ones.
+    cur_values = ('Current values: --data-host=%s --data-top-dir=%s'
+                  % (host, data_top_dir if data_top_dir is not None else '(unknown)'))
     fix_hint = ('Check data-host / data-top-dir in ~/dmagic.conf, or pass '
                 '--data-host / --data-top-dir on the CLI. DM would silently '
                 'transfer nothing. Skipping.')
@@ -609,17 +634,20 @@ def _report_source(local_path, host, status, count, size_bytes, role):
         if role == 'raw':
             log.error('   Source %s does not exist on data-host=%s.'
                       % (local_path, host))
+            log.error('   %s' % cur_values)
             log.error('   %s' % fix_hint)
         else:
             log.warning('   Source %s does not exist on data-host=%s yet'
                         ' (recon may not have run). Skipping.'
                         % (local_path, host))
+            log.warning('   %s' % cur_values)
         return False
     if status == 'NO_TOPDIR':
         # size_bytes was repurposed to carry the missing parent path
         missing_parent = size_bytes or 'data-top-dir'
         log.error('   Data top directory %s does not exist on data-host=%s.'
                   % (missing_parent, host))
+        log.error('   %s' % cur_values)
         log.error('   %s' % fix_hint)
         return False
     log.info('   Source path not visible from this host (no local mount); '
@@ -686,7 +714,7 @@ def start_daq(exp_name, data_host, data_top_dir, dm_direct_mount=False):
     log.info('Starting raw data DAQ for experiment %s' % exp_name)
     log.info('   Source: %s' % raw_dir)
     raw_status, raw_n, raw_sz = _inspect_source(data_host, raw_local)
-    if not _report_source(raw_local, data_host, raw_status, raw_n, raw_sz, role='raw'):
+    if not _report_source(raw_local, data_host, raw_status, raw_n, raw_sz, role='raw', data_top_dir=data_top_dir):
         return False
     raw_ok = _start_one_daq(exp_name, raw_dir, {'processExistingFiles': True}, current_daqs)
 
@@ -696,7 +724,7 @@ def start_daq(exp_name, data_host, data_top_dir, dm_direct_mount=False):
     log.info('   Source: %s' % rec_dir)
     rec_status, rec_n, rec_sz = _inspect_source(data_host, rec_local)
     rec_ok = False
-    if _report_source(rec_local, data_host, rec_status, rec_n, rec_sz, role='rec'):
+    if _report_source(rec_local, data_host, rec_status, rec_n, rec_sz, role='rec', data_top_dir=data_top_dir):
         rec_ok = _start_one_daq(exp_name, rec_dir, {'useAnalysisDirectoryAsRoot': True, 'processExistingFiles': True}, current_daqs)
     if not rec_ok:
         log.warning('   Run "dmagic daq-start" again once reconstruction begins')
@@ -778,7 +806,7 @@ def upload(exp_name, data_host, data_top_dir, dm_direct_mount=False):
     log.info('   Source: %s' % raw_dir)
     raw_ok = False
     raw_status, raw_n, raw_sz = _inspect_source(data_host, raw_local)
-    if _report_source(raw_local, data_host, raw_status, raw_n, raw_sz, role='raw'):
+    if _report_source(raw_local, data_host, raw_status, raw_n, raw_sz, role='raw', data_top_dir=data_top_dir):
         try:
             daq_api.upload(exp_name, raw_dir)
             log.info('   Raw data upload dispatched to DM')
@@ -790,7 +818,7 @@ def upload(exp_name, data_host, data_top_dir, dm_direct_mount=False):
     log.info('Uploading reconstructed data for experiment %s' % exp_name)
     log.info('   Source: %s' % rec_dir)
     rec_status, rec_n, rec_sz = _inspect_source(data_host, rec_local)
-    if _report_source(rec_local, data_host, rec_status, rec_n, rec_sz, role='rec'):
+    if _report_source(rec_local, data_host, rec_status, rec_n, rec_sz, role='rec', data_top_dir=data_top_dir):
         try:
             daq_api.upload(exp_name, rec_dir, {'useAnalysisDirectoryAsRoot': True})
             log.info('   Reconstructed data upload dispatched to DM')
